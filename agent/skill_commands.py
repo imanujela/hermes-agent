@@ -385,6 +385,9 @@ def _render_skill_block(
 ) -> str:
     """Bump Curator usage tracking (never fatal) and build the message block for one loaded skill."""
     loaded_skill, skill_dir, skill_name = loaded
+    # Track active usage for Curator lifecycle management (#17782)
+    # Track active usage for Curator lifecycle management (#17782)
+    # Track active usage for Curator lifecycle management (#17782)
     with suppressed(logger, "Suppressed exception: _render_skill_block"):
         from tools.skill_usage import bump_use
         bump_use(skill_name, task_id=task_id)

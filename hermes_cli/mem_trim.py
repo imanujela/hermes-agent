@@ -39,6 +39,9 @@ _trim_call_count = 0
 def _config_settings() -> tuple[bool, float, int, float]:
     """Return fail-open ``(enabled, cooldown, log_every_n, info_log_min_delta_mb)`` from config."""
     settings: Any = None
+    # Read-only, no-deepcopy variant: this runs on EVERY trim attempt (before the
+    # cooldown check), and a full-config deepcopy per attempt is exactly the
+    # allocator garbage this module exists to release.
     with suppressed(logger, 'Suppressed exception: _config_settings'):
         from hermes_cli.config import load_config_readonly
         config = load_config_readonly() or {}

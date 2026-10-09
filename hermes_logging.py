@@ -174,6 +174,46 @@ def _safe_stderr():  # type: ignore[return]
         return stream  # best-effort: no buffer / wrapping failed -> original stream
 
 
+# ── Redacting handler factory ──────────────────────────────────────
+# Six entry points (gateway/run.py, gateway/run_turn.py, acp_adapter/entry.py,
+# mcp_serve.py, mini_swe_runner.py, hermes_cli/plugins.py) each used to build
+# their own ``RedactingFormatter`` with a lazy try/except-ImportError fallback.
+# These two helpers centralize that pattern so the import and fallback are
+# defined exactly once. ``redacted_formatter`` returns the formatter alone (for
+# sites that already have a handler, e.g. a RotatingFileHandler); ``redacted_handler``
+# wraps it in a StreamHandler(_safe_stderr()) with a settable level.
+
+
+def redacted_formatter(format_str: str, datefmt: str | None = None) -> logging.Formatter:
+    """Return a ``RedactingFormatter``, falling back to ``logging.Formatter``.
+
+    The lazy import avoids a circular dependency at module load (``agent.redact``
+    imports modules that eventually import ``hermes_logging``). When the import
+    fails the fallback is a plain ``logging.Formatter`` with the same format and
+    datefmt — no redaction, but logging still works.
+    """
+    try:
+        from agent.redact import RedactingFormatter
+        return RedactingFormatter(format_str, datefmt=datefmt)
+    except ImportError:
+        return logging.Formatter(format_str, datefmt=datefmt)
+
+
+def redacted_handler(
+    format_str: str, level: int = logging.INFO, datefmt: str | None = None,
+) -> logging.StreamHandler:
+    """Create a ``StreamHandler`` with a ``RedactingFormatter`` and ImportError fallback.
+
+    All six entry points that need a redacting stderr handler build it the same
+    way; this factory ensures the lazy import, the fallback, and the
+    ``_safe_stderr()`` stream are consistent across every call site.
+    """
+    handler = logging.StreamHandler(_safe_stderr())
+    handler.setLevel(level)
+    handler.setFormatter(redacted_formatter(format_str, datefmt=datefmt))
+    return handler
+
+
 def _is_windows_concurrent_log_lock_timeout(exc: BaseException | None) -> bool:
     """True for concurrent-log-handler's Windows lock timeout.
 

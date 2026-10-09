@@ -17,6 +17,7 @@ import time
 from agent.i18n import t
 from agent.interrupt_compat import request_hard_interrupt
 from hermes_cli.commands_completion import SlashCommandAutoSuggest, SlashCommandCompleter
+from hermes_suppress import suppressed
 from pathlib import Path
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.history import FileHistory
@@ -281,13 +282,11 @@ class CLITuiMixin:
         except Exception:
             symbol = "❯ "
         symbol = (symbol or "❯ ").rstrip() + " "
-        try:
+        with suppressed(None, "profile symbol prefix"):
             from hermes_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()
             if profile not in {"default", "custom"}:
                 symbol = f"{profile} {symbol}"
-        except Exception:
-            pass  # over line cap; logger omitted intentionally
         stripped = symbol.rstrip()
         if not stripped:
             return "❯ ", "❯ "
@@ -359,12 +358,10 @@ class CLITuiMixin:
         """
         from cli import _detect_light_mode, _maybe_remap_for_light_mode
         style_dict = dict(getattr(self, "_tui_style_base", {}) or {})
-        try:
+        with suppressed(None, "style overrides"):
             from hermes_cli.skin_engine import get_prompt_toolkit_style_overrides
             style_dict.update(get_prompt_toolkit_style_overrides())
-        except Exception:
-            pass  # over line cap; logger omitted intentionally
-        try:
+        with suppressed(None, "light-mode remap"):
             if _detect_light_mode():
                 def _remap_value(v: str) -> str:
                     if not v:
@@ -374,8 +371,6 @@ class CLITuiMixin:
                         return v
                     return " ".join(_maybe_remap_for_light_mode(t) if t.startswith("#") else t for t in tokens)
                 style_dict = {k: _remap_value(v or "") for k, v in style_dict.items()}
-        except Exception:
-            pass  # over line cap; logger omitted intentionally
         return style_dict
 
     def _apply_tui_skin_style(self) -> bool:
@@ -872,7 +867,7 @@ class CLITuiMixin:
         # Cut TTS so the user can start talking: stop_playback() just terminates a subprocess;
         # the stop event drains the streaming pipeline if one is live.
         if not self._voice_tts_done.is_set():
-            try:
+            with suppressed(None, "TTS cut on record key"):
                 logger.info("TTS CUT: record key handler cutting TTS")
                 from tools.tts_streaming import mark_speech_interrupted
                 mark_speech_interrupted()
@@ -881,8 +876,6 @@ class CLITuiMixin:
                 from tools.voice_mode import stop_playback
                 stop_playback()
                 self._voice_tts_done.set()
-            except Exception:
-                pass  # over line cap; logger omitted intentionally
         with self._voice_lock:
             self._voice_continuous = True
 
@@ -1094,13 +1087,11 @@ class CLITuiMixin:
         hidden, the emulator may have coalesced output or repainted, so prompt_toolkit's
         incremental diff would stack a fresh prompt chrome on the stale one (#60920, #25337).
         """
-        try:
+        with suppressed(None, "focus-regain redraw"):
             for press in getattr(event, "key_sequence", None) or ():
                 if getattr(press, "data", None) == "\x1b[I":
                     self._schedule_focus_regain_redraw()
                     break
-        except Exception:
-            pass  # over line cap; logger omitted intentionally
 
     def _tui_handle_escape_modal(self, event):
         """ESC cancels active secret/sudo/connection/slash-confirm prompts."""
@@ -1548,25 +1539,21 @@ class CLITuiMixin:
                 _cprint(f"  {_ACCENT}{t('cli.tui.redirected_turn', preview=preview)}{_RST}")
             else:
                 self._interrupt_queue.put(payload)
-                try:
+                with suppressed(None, "interrupt debug log"):
                     with open(_hermes_home / "interrupt_debug.log", "a", encoding="utf-8") as _f:
                         _f.write(
                             f"{time.strftime('%H:%M:%S')} ENTER: queued interrupt msg={str(payload)[:60]!r}, "
                             f"agent_running={self._agent_running}\n")
-                except Exception:
-                    pass  # over line cap; logger omitted intentionally
         # First-touch onboarding: one-line tip about the /busy knob on the first busy-while-
         # running event for this install; the flag persists to config.yaml. Guarded so
         # onboarding can never break the input loop.
-        try:
+        with suppressed(None, "busy-input onboarding"):
             from agent.onboarding import BUSY_INPUT_FLAG, busy_input_hint_cli, is_seen, mark_seen
             if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
                 _hint_mode = "redirect" if redirected else _effective_mode
                 _cprint(f"  {_DIM}{busy_input_hint_cli(_hint_mode)}{_RST}")
                 mark_seen(_hermes_home / "config.yaml", BUSY_INPUT_FLAG)
                 CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
-        except Exception:
-            pass  # over line cap; logger omitted intentionally
 
     def _tui_enter_overlay(self, event) -> bool:
         """Enter while a modal overlay is up: submit it. True when handled."""

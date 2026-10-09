@@ -4865,8 +4865,8 @@ def _shutdown_gateway_health_export(runner: Any) -> None:
 
 def _gateway_stderr_formatter() -> logging.Formatter:
     """Return the redacting formatter used by the gateway stderr stream."""
-    from agent.redact import RedactingFormatter
-    return RedactingFormatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    from hermes_logging import redacted_formatter
+    return redacted_formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 # ownership guard inserted below (PR #93084)
@@ -5115,7 +5115,7 @@ def _start_gateway_configure_logging(verbosity: Optional[int]) -> None:
     _best_effort(_sync_skills)
 
     # Centralized logging (agent.log INFO+, errors.log WARNING+, gateway.log gateway-only); idempotent.
-    from hermes_logging import setup_logging, _safe_stderr
+    from hermes_logging import setup_logging, redacted_handler
     setup_logging(hermes_home=_hermes_home, mode="gateway")
 
     def _security_audit() -> None:
@@ -5133,9 +5133,8 @@ def _start_gateway_configure_logging(verbosity: Optional[int]) -> None:
     # Optional stderr handler from -v/-q: None (quiet) = none; 0 = WARNING; 1 = INFO; 2+ = DEBUG.
     if verbosity is not None:
         _stderr_level = {0: logging.WARNING, 1: logging.INFO}.get(verbosity, logging.DEBUG)
-        _stderr_handler = logging.StreamHandler(_safe_stderr())
-        _stderr_handler.setLevel(_stderr_level)
-        _stderr_handler.setFormatter(_gateway_stderr_formatter())
+        _stderr_handler = redacted_handler(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s", level=_stderr_level)
         root = logging.getLogger()
         root.addHandler(_stderr_handler)
         if _stderr_level < root.level:  # so DEBUG records can reach the handler

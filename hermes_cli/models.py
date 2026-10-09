@@ -2148,6 +2148,8 @@ def cached_provider_model_ids(
 def clear_provider_models_cache(provider: Optional[str] = None) -> None:
     """Drop one provider's cache entry, or wipe the whole cache (``provider=None``). Used by
     ``/model --refresh`` and ``hermes model --refresh``."""
+    # Native Ollama tags are keyed by root URL, not provider slug — a targeted refresh can't
+    # identify the root from the name alone, so clear this small in-process cache every time.
     with suppressed(logger, 'Suppressed exception: clear_provider_models_cache'):
         _OLLAMA_LOCAL_MODELS_CACHE.clear()
         _OLLAMA_LOCAL_PROBE_FAILURE_CACHE.clear()

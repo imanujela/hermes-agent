@@ -166,6 +166,8 @@ def _data_file(name: str) -> Path:
     if not path.exists():
         legacy = get_hermes_home() / "plugins" / "hermes-achievements" / name
         if legacy.exists():
+            # Two statements so the read (utf-8-sig, tolerates a BOM)
+            # and the write (utf-8, never emits one) stay distinct.
             with suppressed(logger, 'Suppressed exception: _data_file'):
                 legacy_text = legacy.read_text(encoding="utf-8-sig")
                 path.write_text(legacy_text, encoding="utf-8")

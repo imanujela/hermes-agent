@@ -41,6 +41,7 @@ from gateway.platforms.tcp_site import start_tcp_site
 from gateway.platforms.webhook_coalesce import WebhookCoalescer, validate_coalesce_config
 from gateway.platforms.webhook_filters import DEFAULT_SCRIPT_TIMEOUT_SECONDS, WebhookRouteProcessor
 from gateway.response_filters import is_autonomous_silence_response
+from hermes_cli.auth_compare import timing_safe_eq
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +101,14 @@ def _is_loopback_host(host: Optional[str]) -> bool:
 
 
 def _hmac_str_equal(provided: str, expected: str) -> bool:
-    """Timing-safe str equality tolerant of non-ASCII: ``compare_digest`` raises TypeError on non-ASCII
-    str and ``provided`` is an attacker-controlled header, so compare as UTF-8 bytes to fail closed."""
-    return hmac.compare_digest(provided.encode(), expected.encode())
+    """Timing-safe str equality tolerant of non-ASCII (architecture #5: delegates to the single seam).
+
+    ``timing_safe_eq`` lowercases, SHA-256-hashes, and ``compare_digest``s the hex digests — handling
+    non-ASCII, length-leak, and case-insensitivity in one place.  Callers keep their own error types;
+    this wrapper preserves the existing call-site signatures so the Svix/GitHub/GitLab/Linear paths
+    need no other change.
+    """
+    return timing_safe_eq(provided, expected)
 
 
 def _hex_hmac(secret: str, data: bytes) -> str:

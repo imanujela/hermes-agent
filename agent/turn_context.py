@@ -544,6 +544,8 @@ def _refresh_mcp_tools_between_turns(agent: Any) -> None:
     """Late-connecting MCP servers land in THIS turn's snapshot, before the first API
     call assembles ``tools=``. ``preserve_prefix`` keeps the tool array append-only so a
     flapping ``check_fn`` can't fork the cache."""
+    # An authorization that committed after its connection card closed: same import-cost gate,
+    # the module is loaded only in a process that ran a connection operation.
     with suppressed(logger, "between-turns MCP tool refresh skipped"):
         if "tools.connectors.mcp" in sys.modules:
             from tools.connectors.mcp import adopt_late_connections

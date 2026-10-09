@@ -170,6 +170,8 @@ def connect_tracked(
             _track_key(resolved)
             return conn
         except Exception:
+            # Close via sqlite3 directly: the tracking entry was either never made or is
+            # being unwound here.
             with suppressed(logger, 'Suppressed exception: connect_tracked'):
                 sqlite3.Connection.close(conn)
             raise

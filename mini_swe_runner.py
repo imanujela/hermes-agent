@@ -383,13 +383,10 @@ def main(
                         format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
     # DEBUG here logs model/tool traffic; redact through the same formatter every other
     # Hermes log target uses so keys cannot reach the console unscrubbed.
-    try:
-        from agent.redact import RedactingFormatter  # lazy: circular at module load
-        for _handler in logging.getLogger().handlers:
-            _handler.setFormatter(RedactingFormatter(
-                '%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S'))
-    except ImportError:
-        pass
+    from hermes_logging import redacted_formatter
+    for _handler in logging.getLogger().handlers:
+        _handler.setFormatter(redacted_formatter(
+            '%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S'))
     runner = MiniSWERunner(model=model, base_url=base_url, api_key=api_key, env_type=env, image=image, cwd=cwd,
                            max_iterations=max_iterations, command_timeout=timeout, verbose=verbose)
     if task:

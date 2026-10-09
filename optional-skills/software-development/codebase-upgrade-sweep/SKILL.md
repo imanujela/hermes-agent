@@ -79,16 +79,18 @@ git diff <fixed-point>...HEAD --stat        # review scope
   `logging.shutdown(); os._exit()` must keep silent `pass` on shutdown
   failure — `logger.debug` after handlers are closed can raise and skip the
   exit entirely.
-- **Duplicate-kwarg TypeError.** Adding `timeout=` to a call that already
-  spreads `**kwargs` containing `timeout` crashes at every call site.
-  Check dict-spreads before adding explicit kwargs.
+- **Timeout collision with `**kwargs`.** Setting `timeout=60` on a call
+  that also spreads `**kwargs` containing `timeout=900` silently uses the
+  wrong value or raises `TypeError`. Check dict-spreads before adding
+  explicit kwargs.
 - **Blanket timeouts mis-size the call.** One constant (60s) applied to
   interactive editors, `npm run build`, large `git fetch --refetch`, and
   sub-second probes breaks all four differently. Tier by call type;
   `TimeoutExpired` is not an `OSError` — add it to except tuples.
-- **Dead `as exc` bindings.** `logger.debug(..., exc_info=True)` captures the
-  traceback implicitly; the binding is unused and lint-flagged (F841).
-  Write `except Exception:` unless the body formats the name.
+- **Codemod shadow bugs.** Mechanical sweeps cause silent regressions:
+  dead `as exc` bindings (F841), stripped `# noqa` / `# type: ignore`
+  pragmas, and local var shadowing of outer names. Diff for pragma loss
+  and re-run the linter after every batch.
 - **File-line caps freeze.** Over-target files may only shrink; adding an
   import + logger line to one breaks the ratchet. Offset growth or leave
   silent sites untouched there.
@@ -100,6 +102,12 @@ git diff <fixed-point>...HEAD --stat        # review scope
   `search_files`-first, and small slices (3-10 files).
 - **Reviewers report, you decide.** Their findings are self-reports; verify
   before applying, and drop findings without `file:line` evidence.
+- **Shallow-clone push failure.** Pushing from a `--depth=1` clone fails
+  with `index-pack` errors. Run `git fetch --unshallow` before push to
+  materialize full history.
+- **The ratchet is the only honest report.** Sub-agent self-reports and
+  `py_compile` are necessary but not sufficient. The repo's health/lint
+  check is the sole authority on whether the sweep improved or regressed.
 
 ## Verification
 

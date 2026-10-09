@@ -341,6 +341,8 @@ def _finalize_single_query(cli) -> None:
         with suppressed(logger, "Suppressed exception: one-shot session store flush failed"):
             _flush_one_shot_session_store(cli)
         _notify_single_query_session_finalize(cli)
+        # A failed goal-loop re-init leaves cli.agent None while the agent
+        # that ran the turns is still the module's active ref.
         with suppressed(logger, "Suppressed exception: one-shot memory provider shutdown failed"):
             _shutdown_agent_memory_provider(getattr(cli, "agent", None) or cli_module._active_agent_ref)
     finally:

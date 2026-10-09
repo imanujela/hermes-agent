@@ -914,6 +914,8 @@ def _jsonable(value: Any) -> Any:
         return [_jsonable(item) for item in value]
     model_dump = getattr(type(value), "model_dump", None)
     if callable(model_dump):
+        # warnings=False: pydantic's generic-union warning would leak to the terminal
+        # mid-response; TypeError = duck-typed model_dump without pydantic's signature.
         with suppressed(logger, "Suppressed exception: _jsonable"):
             try:
                 return _jsonable(value.model_dump(mode="json", warnings=False))

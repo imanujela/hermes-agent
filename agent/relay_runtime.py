@@ -245,6 +245,9 @@ def _load_segments_config() -> dict[str, Any]:
     """gateway.telemetry.session_segments; both defaults OFF => rotation never fires."""
     on_compaction = False
     max_turns = 0
+    # Never import gateway.run here: its import-time env setup (_HERMES_GATEWAY, HERMES_QUIET,
+    # TERMINAL_CWD := home) rebinds a CLI/TUI/cron host — hung approvals (#87183), `hermes -z`
+    # running in $HOME without the launch dir's AGENTS.md (#95577). Same reader it delegates to.
     with suppressed(logger, "Suppressed exception: _load_segments_config"):
         from hermes_cli.config_effective import load_user_config_effective
 

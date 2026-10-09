@@ -26,6 +26,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 from hermes_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
+from hermes_suppress import suppressed
 
 if TYPE_CHECKING:
     from hermes_cli.kanban_db import Task
@@ -293,7 +294,7 @@ def reap_worker_zombies() -> "list[int]":
             _live_worker_procs.pop(pid, None)
             reaped.append(pid)
         return reaped
-    try:
+    with suppressed(None, "zombie reaping"):
         while True:
             try:
                 pid, status = os.waitpid(-1, os.WNOHANG)
@@ -303,8 +304,6 @@ def reap_worker_zombies() -> "list[int]":
                 break
             _record_worker_exit(pid, status)
             reaped.append(pid)
-    except Exception:
-        pass  # over line cap; logger omitted intentionally
     return reaped
 
 
@@ -2597,11 +2596,9 @@ def _resolve_hermes_argv() -> list[str]:
             return _hermes_path_argv(resolved_env_bin)
         return _module_hermes_argv()
 
-    try:
+    with suppressed(None, "module hermes discovery"):
         if importlib.util.find_spec("hermes_cli") is not None:
             return _module_hermes_argv()
-    except Exception:
-        pass  # over line cap; logger omitted intentionally
 
     hermes_bin = _safe_which_no_cwd("hermes") if _kb._IS_WINDOWS else shutil.which("hermes")
     if hermes_bin:

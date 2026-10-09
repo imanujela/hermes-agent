@@ -96,15 +96,10 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
         _PLUGINS_DEBUG = env_var_enabled("HERMES_PLUGINS_DEBUG")
     if not _PLUGINS_DEBUG or _DEBUG_HANDLER_INSTALLED:
         return
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setLevel(logging.DEBUG)
+    from hermes_logging import redacted_handler
+    handler = redacted_handler("[plugins] %(levelname)s %(message)s", level=logging.DEBUG)
     # Debug lines tee manifests and catalog URLs, which can embed credentials; route
     # stderr through the same redacting formatter every other log target uses.
-    try:
-        from agent.redact import RedactingFormatter  # lazy: circular at module load
-        handler.setFormatter(RedactingFormatter("[plugins] %(levelname)s %(message)s"))
-    except ImportError:
-        handler.setFormatter(logging.Formatter("[plugins] %(levelname)s %(message)s"))
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
     logger.propagate = True

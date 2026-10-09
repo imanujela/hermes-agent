@@ -141,7 +141,9 @@ class DashboardAuthProvider(ABC):
         """Verify a non-interactive bearer token; return its principal. Mirrors ``verify_session``:
         return ``None`` (never raise) for an unrecognised token so the seam falls through; raise
         ``ProviderError`` ONLY for a genuine backing-store outage. Shared secrets MUST be compared
-        with ``hmac.compare_digest``. The default raises so a mis-flagged provider fails loudly."""
+        with :func:`hermes_cli.auth_compare.timing_safe_eq` (the single timing-safe compare seam;
+        bare ``hmac.compare_digest`` raises on non-ASCII and leaks length on unequal strings).
+        The default raises so a mis-flagged provider fails loudly."""
         raise NotImplementedError(
             f"{type(self).__name__} does not support token auth "
             "(set supports_token = True and override verify_token)")

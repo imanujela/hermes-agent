@@ -61,7 +61,7 @@ def _tool_call_logger() -> logging.Logger:
     with _tool_call_logger_lock:
         if not tool_logger.handlers:
             from logging.handlers import RotatingFileHandler
-            from agent.redact import RedactingFormatter
+            from hermes_logging import redacted_formatter
             from gateway.run import _hermes_home
 
             log_dir = _hermes_home / "logs"
@@ -69,7 +69,7 @@ def _tool_call_logger() -> logging.Logger:
             handler = RotatingFileHandler(
                 log_dir / "tool_calls.log", maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8",
             )
-            handler.setFormatter(RedactingFormatter("%(message)s"))
+            handler.setFormatter(redacted_formatter("%(message)s"))
             tool_logger.setLevel(logging.INFO)
             tool_logger.propagate = False
             tool_logger.addHandler(handler)

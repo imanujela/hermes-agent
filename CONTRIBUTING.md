@@ -384,7 +384,7 @@ Standardize pure best-effort swallow-and-log blocks to the seam in `hermes_suppr
         notifier.send(welcome_text)
 
 Stay with an explicit `try/except` when the handler has real control flow (return, cleanup, re-raise), when the log level is above DEBUG, or when catching `BaseException`.
-- **Timeouts**: take durations from the named constants in `hermes_cli/_timeouts.py` and `tools/_limits.py`, never from bare literals at call sites.
+- **Timeouts**: take durations from the named constants in `hermes_tiers.py` (re-exported via `hermes_cli/_timeouts.py` and `tools/_limits.py`), never from bare literals at call sites.
 
 ---
 

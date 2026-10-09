@@ -134,6 +134,11 @@ def _ask_human(command: str, description: str, timeout_seconds: int, allow_perma
     # input() fallback would spawn a daemon thread whose read never sees Enter (keystrokes go to prompt_toolkit) — an
     # invisible deadlock. Fail closed loudly instead; threads needing interactive approval must install a callback via
     # tools.terminal_tool.set_approval_callback() first.
+    # Fail fast and log loudly so the caller can surface a real error to the agent. Any thread
+    # that needs interactive approval must install a callback via
+    # tools.terminal_tool.set_approval_callback() before reaching this point (see delegate_tool.py,
+    # run_agent.py _execute_tool_calls_concurrent / _spawn_background_review for the established
+    # pattern). See #15216.
     with suppressed(logger, 'Suppressed exception: prompt_toolkit absent or detection failed: legacy input() path is safe'):
         from prompt_toolkit.application.current import get_app_or_none
         if get_app_or_none() is not None:

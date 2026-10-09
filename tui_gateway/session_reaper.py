@@ -317,6 +317,8 @@ def _repair_missing_ws_orphan_reaps() -> None:
 
 def _reclaim_orphaned_leases() -> None:
     """Hand the registry the lease ids we still own so it can drop the rest."""
+    # Stale deferred leases first: a settlement callback that never arrived must not
+    # keep vouching for a zombie slot (#62823). Released leases leave _own_live_lease_ids.
     with suppressed(logger, "stale deferred lease sweep failed"):
         _reap_stale_deferred_leases()
     with suppressed(logger, "orphaned lease reclaim failed"):

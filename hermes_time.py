@@ -86,6 +86,10 @@ def _resolve_timezone_name() -> str:
     tz_env = _env_timezone()
     if tz_env:
         return tz_env
+    # Prefer the shared cached effective-config loader (mtime-keyed + libyaml, managed overlay
+    # included so an administrator can pin ``timezone``): a direct safe_load of a large
+    # config.yaml costs ~100 ms and this ran inside the FIRST system prompt build. The bare
+    # parse is the stdlib-safe fallback for bootstrap consumers without hermes_cli importable.
     with suppressed(logger, "Failed to read configured timezone from user config"):
         try:
             from hermes_cli.config_effective import load_user_config_effective

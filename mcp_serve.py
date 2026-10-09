@@ -710,12 +710,9 @@ def run_mcp_server(verbose: bool = False) -> None:
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING, stream=sys.stderr)
     # DEBUG here can echo tool payloads that carry credentials; route the stdlib handler
     # through the same redacting formatter setup_logging() uses for every other target.
-    try:
-        from agent.redact import RedactingFormatter  # lazy: circular at module load
-        for _handler in logging.getLogger().handlers:
-            _handler.setFormatter(RedactingFormatter("%(levelname)s:%(name)s:%(message)s"))
-    except ImportError:
-        pass
+    from hermes_logging import redacted_formatter
+    for _handler in logging.getLogger().handlers:
+        _handler.setFormatter(redacted_formatter("%(levelname)s:%(name)s:%(message)s"))
     bridge = EventBridge()
     bridge.start()
     server = create_mcp_server(event_bridge=bridge)

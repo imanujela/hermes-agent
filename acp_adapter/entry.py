@@ -64,11 +64,11 @@ class _BenignProbeMethodFilter(logging.Filter):
 
 def _setup_logging() -> None:
     """Route all logging to stderr so stdout stays clean for ACP stdio."""
-    from agent.redact import RedactingFormatter
+    from hermes_logging import redacted_handler
 
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(RedactingFormatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                                            datefmt="%Y-%m-%d %H:%M:%S"))
+    handler = redacted_handler(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
     handler.addFilter(_BenignProbeMethodFilter())
     root = logging.getLogger()
     root.handlers.clear()

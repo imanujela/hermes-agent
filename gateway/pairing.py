@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 from gateway.whatsapp_identity import expand_whatsapp_aliases, normalize_whatsapp_identifier
+from hermes_cli.auth_compare import timing_safe_eq
 from hermes_constants import get_default_hermes_root, get_hermes_dir, get_hermes_home
 from utils import atomic_json_write, file_signature
 
@@ -508,7 +509,7 @@ class PairingStore:
                     salt = bytes.fromhex(entry["salt"])
                 except ValueError:
                     continue
-                if secrets.compare_digest(self._hash_code(code, salt), entry["hash"]):
+                if timing_safe_eq(self._hash_code(code, salt), entry["hash"]):
                     return self._finish_approval(platform, pending, entry_id, entry)
             self._record_failed_attempt(platform)
             return None
@@ -530,12 +531,12 @@ class PairingStore:
         """
         with self._lock:
             self._cleanup_expired(platform)
-            request_id = str(request_id or "").strip().lower()
+            request_id = str(request_id or "").strip()
             if not request_id:
                 return None
             pending = self._load_json(self._pending_path(platform))
             for entry_id, entry in pending.items():
-                if _is_hashed_entry(entry) and secrets.compare_digest(str(entry_id).lower(), request_id):
+                if _is_hashed_entry(entry) and timing_safe_eq(str(entry_id), request_id):
                     return self._finish_approval(platform, pending, entry_id, entry)
             return None
 

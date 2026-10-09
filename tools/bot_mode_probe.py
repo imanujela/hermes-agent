@@ -371,6 +371,8 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
     resolved = _resolve_home(home)
     root = _hermes_root(resolved)
     surface: dict = {}
+    # Canonical loader (managed overlay + env expansion + normalization),
+    # scoped to the bot's home via the override the loaders already honor.
     with suppressed(logger, 'Suppressed exception: capability_fingerprint'):
         from agent.skill_utils import parse_config_string_list
         from hermes_cli.config import load_config_readonly
